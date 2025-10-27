@@ -1,0 +1,17 @@
+{
+  "name": "BIBLE",
+  "short_name": "BIBLE",
+  "description": KJV BIBLE",
+  "scope": "/bible/",
+  "start_url": "/bible/",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "display": "fullscreen", 
+  "icons": [
+      {
+        "src": "/bible/icon-512.png",
+        "type": "image/png",
+        "sizes": "512x512"
+      }
+  ]
+}
