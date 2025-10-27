@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KJV Bible Navigator (2)</title>
+    <title>KJV Bible Navigator (3)</title>
     <style>
         /* BASE STYLES */
         body {
@@ -52,6 +52,11 @@
             font-size: 1em;
             display: inline-block;
             transition: background-color 0.1s;
+            /* Allow long press */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
         /* Specific button colors for differentiation */
         #navBookTop { background-color: #d4edda; color: #1e7e34; }
@@ -91,8 +96,11 @@
             background-color: #fff;
             border-radius: 5px;
             line-height: 1.6;
-            font-size: 28px;
             text-align: justify;
+        }
+        /* CRUCIAL: Set a default font-size for P elements for consistency and the prompt. */
+        #contentDisplay p {
+            font-size: 16px; /* Default font size (in pixels) */
         }
         .chapter-heading {
             font-size: 1.5em;
@@ -163,31 +171,33 @@
         // ASSUMPTION: The JSON files are in a directory named 'kjv'
         const KJV_DIR = './kjv/';
         
-        // --- NEW/UPDATED Element references for Fixed Headers ---
+        // --- GLOBAL STATE ---
+        const bookDataCache = {};
+        let currentBookData = null;
+        let currentBookName = null;
+        let currentChapterNumber = null;
+        // NEW GLOBAL: Default font size from CSS
+        let currentFontSize = 16; 
+        
+        // --- Element References ---
         const booksHeader = document.getElementById('booksHeader');
         const chaptersHeader = document.getElementById('chaptersHeader');
         const versesHeader = document.getElementById('versesHeader');
         const contentNavHeader = document.getElementById('contentNavHeader');
         const contentHeader = document.getElementById('contentHeader'); 
+        const contentDisplay = document.getElementById('contentDisplay');
 
-        // Content Area references (the scrollable parts)
+        // Content Area references
         const booksSection = document.getElementById('booksSection');
         const chaptersSection = document.getElementById('chaptersSection');
         const versesSection = document.getElementById('versesSection');
         const contentSection = document.getElementById('contentSection');
-        const contentDisplay = document.getElementById('contentDisplay');
 
         // Contextual Navigation references
         const bookContext = document.getElementById('bookContext');
         const bookContextVerse = document.getElementById('bookContextVerse');
         const chapterContextVerse = document.getElementById('chapterContextVerse');
 
-        // State management
-        const bookDataCache = {};
-        let currentBookData = null;
-        let currentBookName = null;
-        let currentChapterNumber = null;
-        
         // --- Helper function to display only one header group ---
         function showHeader(activeHeaderId) {
             booksHeader.style.display = 'none';
@@ -203,11 +213,108 @@
                 versesHeader.style.display = 'block';
             } else if (activeHeaderId === 'content') {
                 contentNavHeader.style.display = 'block';
+                // Attach the long press listener whenever content header is shown
+                setTimeout(attachLongPressListener, 0); 
             }
         }
 
+        // --- Long Press Functionality ---
+        let pressTimer;
+        const LONG_PRESS_DURATION = 750; // milliseconds
 
-        // --- View Visibility Functions (Updated to manage fixed header) ---
+        function startPress(event) {
+            // Only attach to the Verse button in the content header
+            if (event.target.id !== 'navVerseTop') return;
+
+            // Prevent default short-click action for a moment
+            event.preventDefault(); 
+            
+            pressTimer = setTimeout(() => {
+                // SUCCESS: Long press detected
+                showFontSizePrompt();
+                
+                // Clear the timer so the short-click handler is not accidentally called
+                clearTimeout(pressTimer); 
+                pressTimer = null;
+                
+            }, LONG_PRESS_DURATION);
+        }
+
+        function endPress(event) {
+            if (pressTimer) {
+                // Short click detected: clear the timer and proceed with the default action
+                clearTimeout(pressTimer);
+                pressTimer = null;
+                // Since we used preventDefault in startPress, we must manually trigger the 
+                // short-click behavior (displaying verses) if the press was short.
+                if (event.target.id === 'navVerseTop') {
+                    // Check if the current view is 'content' to avoid recursion/errors
+                    if (contentNavHeader.style.display === 'block') {
+                         // Find the correct onclick logic from the element itself
+                        const onclickAttr = event.target.getAttribute('onclick');
+                        if(onclickAttr) {
+                            eval(onclickAttr); // Execute the stored onclick logic
+                        }
+                    }
+                }
+            }
+        }
+        
+        function showFontSizePrompt() {
+            const newSize = prompt(`Enter new text size in pixels (current size: ${currentFontSize}px):`, currentFontSize);
+
+            if (newSize !== null) {
+                const parsedSize = parseInt(newSize, 10);
+                if (parsedSize > 10 && !isNaN(parsedSize)) {
+                    // Update global state
+                    currentFontSize = parsedSize;
+                    
+                    // Apply new font size to the displayed content
+                    document.styleSheets[0].insertRule(`#contentDisplay p { font-size: ${currentFontSize}px !important; }`, 0);
+                    
+                    // Optional: Re-scroll to the current verse to confirm the change visually
+                    const currentReference = document.getElementById('contentHeader').textContent;
+                    const parts = currentReference.split(':');
+                    const chapter = parseInt(parts[0].trim().split('Chapter ')[1], 10);
+                    const verse = parseInt(parts[1].trim().split('Verse ')[0], 10);
+                    
+                    if (chapter && verse) {
+                         const targetElementId = `V${currentBookName}${chapter}:${verse}`;
+                         const targetElement = document.getElementById(targetElementId);
+                         if (targetElement) {
+                            targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                         }
+                    }
+
+                } else if (!isNaN(parsedSize)) {
+                    alert("Font size must be a number greater than 10.");
+                }
+            }
+        }
+        
+        function attachLongPressListener() {
+            const verseBtn = document.getElementById('navVerseTop');
+            
+            if (verseBtn) {
+                // Remove existing listeners to prevent duplicates
+                verseBtn.removeEventListener('mousedown', startPress);
+                verseBtn.removeEventListener('mouseup', endPress);
+                verseBtn.removeEventListener('mouseleave', endPress);
+                verseBtn.removeEventListener('touchstart', startPress);
+                verseBtn.removeEventListener('touchend', endPress);
+                
+                // Attach new listeners for both mouse and touch
+                verseBtn.addEventListener('mousedown', startPress);
+                verseBtn.addEventListener('mouseup', endPress);
+                verseBtn.addEventListener('mouseleave', endPress);
+                verseBtn.addEventListener('touchstart', startPress);
+                verseBtn.addEventListener('touchend', endPress);
+            }
+        }
+        // --- End Long Press Functionality ---
+
+
+        // --- View Visibility Functions ---
         function showBooks() {
             showHeader('books');
             booksSection.style.display = 'block';
@@ -271,12 +378,10 @@
             document.getElementById('versesList').innerHTML = '';
             currentBookName = bookName;
             
-            // UPDATE CONTEXTUAL NAVIGATION for Chapters View (in fixed header)
             bookContext.innerHTML = `<button id="navBookTop" class="context-nav-btn" onclick="showBooks()">${bookName}</button>`;
             
             showChapters(); 
             
-            // Load book data (from cache or fetch)
             if (!bookDataCache[bookName]) {
                 try {
                     const fileName = `${bookName}.json`;
@@ -295,7 +400,6 @@
             
             currentBookData = bookDataCache[bookName];
 
-            // Create chapter buttons
             currentBookData.chapters.forEach(chapter => {
                 const chapterNumber = chapter.chapter;
                 const button = document.createElement('button');
@@ -310,81 +414,71 @@
             document.getElementById('versesList').innerHTML = '';
             currentChapterNumber = chapterNumber;
 
-            // UPDATE CONTEXTUAL NAVIGATION for Verses View (in fixed header)
             bookContextVerse.innerHTML = `<button id="navBookTop" class="context-nav-btn" onclick="showBooks()">${currentBookName}</button>`;
             chapterContextVerse.innerHTML = `<button id="navChapterTop" class="context-nav-btn" onclick="displayChapters('${currentBookName}')">Chapter ${chapterNumber}</button>`;
             
             showVerses(); 
             
-            // Create verse buttons
             verses.forEach(verse => {
                 const verseNumber = verse.verse;
-                
                 const button = document.createElement('button');
                 button.textContent = verseNumber;
-                
-                // When clicked, display the final content
                 button.onclick = () => displayFullBook(currentBookName, chapterNumber, verseNumber);
                 document.getElementById('versesList').appendChild(button);
             });
         }
 
-   // --- 4. Display FULL Book Content and Scroll to Verse (FINAL FIX - Scroll Center) ---
-function displayFullBook(bookName, chapterNumber, verseNumber) {
-    
-    // 1. Show the content view (and the correct fixed header)
-    showContent();
-    
-    // Find the current chapter data to use for the verse button's onclick
-    const currentChapter = currentBookData.chapters.find(c => c.chapter === chapterNumber);
-    
-    // FIX: Convert the verses array to a JSON string and escape quotes for HTML insertion
-    const versesJsonString = JSON.stringify(currentChapter.verses).replace(/"/g, '&quot;');
-    
-    // 2. BUILD THE FULL CONTEXTUAL BREADCRUMB (in fixed header)
-    contentHeader.innerHTML = `
-        <button id="navBookTop" class="context-nav-btn" onclick="showBooks()">
-            ${bookName}
-        </button>
-        <button id="navChapterTop" class="context-nav-btn" onclick="displayChapters('${bookName}')">
-            Chapter ${chapterNumber}
-        </button>
-        <button id="navVerseTop" class="context-nav-btn" onclick="displayVerses(${chapterNumber}, JSON.parse('${versesJsonString}'))">
-            Verse ${verseNumber}
-        </button>
-    `;
-
-    // 3. Render all chapters and verses of the book
-    contentDisplay.innerHTML = ''; 
-    const bookHTML = currentBookData.chapters.map(chapter => {
-        let chapterHtml = `<h3 id="Ch${bookName}${chapter.chapter}" class="chapter-heading">Chapter ${chapter.chapter}</h3>`;
-        
-        chapter.verses.forEach(verse => {
-            const verseId = `V${bookName}${chapter.chapter}:${verse.verse}`;
-            let verseClass = 'verse-text';
-
-            // Check if this is the selected verse to highlight
-            if (chapter.chapter === chapterNumber && verse.verse === verseNumber) {
-                verseClass += ' highlighted-verse';
-            }
+        // --- 4. Display FULL Book Content and Scroll to Verse ---
+        function displayFullBook(bookName, chapterNumber, verseNumber) {
             
-            chapterHtml += `<p id="${verseId}" class="${verseClass}"><strong>${verse.verse}.</strong> ${verse.text}</p>`;
-        });
-        return chapterHtml;
-    }).join('');
-    
-    contentDisplay.innerHTML = bookHTML;
+            showContent();
+            
+            const currentChapter = currentBookData.chapters.find(c => c.chapter === chapterNumber);
+            
+            const versesJsonString = JSON.stringify(currentChapter.verses).replace(/"/g, '&quot;');
+            
+            // 2. BUILD THE FULL CONTEXTUAL BREADCRUMB (in fixed header)
+            contentHeader.innerHTML = `
+                <button id="navBookTop" class="context-nav-btn" onclick="showBooks()">
+                    ${bookName}
+                </button>
+                <button id="navChapterTop" class="context-nav-btn" onclick="displayChapters('${bookName}')">
+                    Chapter ${chapterNumber}
+                </button>
+                <button id="navVerseTop" class="context-nav-btn" onclick="displayVerses(${chapterNumber}, JSON.parse('${versesJsonString}'))">
+                    Verse ${verseNumber}
+                </button>
+            `;
 
-    // 4. SCROLL to the selected verse
-    const targetElementId = `V${bookName}${chapterNumber}:${verseNumber}`;
-    const targetElement = document.getElementById(targetElementId);
-    
-    if (targetElement) {
-        // CHANGED: Use block: 'center' to position the target element in the middle 
-        // of the viewport, ensuring it's not hidden by the fixed header.
-        targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
-    }
-}
+            // 3. Render all chapters and verses of the book
+            contentDisplay.innerHTML = ''; 
+            const bookHTML = currentBookData.chapters.map(chapter => {
+                let chapterHtml = `<h3 id="Ch${bookName}${chapter.chapter}" class="chapter-heading">Chapter ${chapter.chapter}</h3>`;
+                
+                chapter.verses.forEach(verse => {
+                    const verseId = `V${bookName}${chapter.chapter}:${verse.verse}`;
+                    let verseClass = 'verse-text';
+
+                    if (chapter.chapter === chapterNumber && verse.verse === verseNumber) {
+                        verseClass += ' highlighted-verse';
+                    }
+                    
+                    chapterHtml += `<p id="${verseId}" class="${verseClass}"><strong>${verse.verse}.</strong> ${verse.text}</p>`;
+                });
+                return chapterHtml;
+            }).join('');
+            
+            contentDisplay.innerHTML = bookHTML;
+
+            // 4. SCROLL to the selected verse
+            const targetElementId = `V${bookName}${chapterNumber}:${verseNumber}`;
+            const targetElement = document.getElementById(targetElementId);
+            
+            if (targetElement) {
+                targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+            }
+        }
+
         // Initialize the app by loading the book buttons
         loadBookList();
     </script>
