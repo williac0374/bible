@@ -439,77 +439,80 @@
             });
         }
 
-        // --- 4. Display FULL Book Content and Scroll to Verse (FIXED) ---
-        function displayFullBook(bookName, chapterNumber, verseNumber) {
-            
-            showContent();
-            
-            // Update global state with the selected verse number
-            currentVerseNumber = verseNumber;
-            
-            // --- FIX START ---
-            if (!currentBookData || !currentBookData.chapters) {
-                console.error("Error: currentBookData or chapters array is missing.");
-                alert("Cannot display verse: Book data is missing. Please select the book again.");
-                showBooks();
-                return;
+     // --- 4. Display FULL Book Content and Scroll to Verse (FIXED Chapter Search) ---
+function displayFullBook(bookName, chapterNumber, verseNumber) {
+    
+    showContent();
+    
+    // Update global state with the selected verse number
+    currentVerseNumber = verseNumber;
+    
+    if (!currentBookData || !currentBookData.chapters) {
+        console.error("Error: currentBookData or chapters array is missing.");
+        alert("Cannot display verse: Book data is missing. Please select the book again.");
+        showBooks();
+        return;
+    }
+
+    // FIX: Ensure the chapter number being searched is consistently treated as an integer (number).
+    // This handles cases where chapterNumber might be a string (e.g., "1") while the JSON uses numbers (e.g., 1).
+    const chapterNumInt = parseInt(chapterNumber, 10);
+    
+    // Find the specific chapter object for the breadcrumb construction
+    const currentChapter = currentBookData.chapters.find(c => c.chapter === chapterNumInt);
+    
+    // CRITICAL CHECK: Ensure the chapter is found before accessing its properties
+    if (!currentChapter) {
+        console.error(`Error: Chapter ${chapterNumber} not found in current book data.`);
+        alert(`Chapter ${chapterNumber} not found.`);
+        return;
+    }
+    
+    const versesJsonString = JSON.stringify(currentChapter.verses).replace(/"/g, '&quot;');
+    
+    // 2. BUILD THE FULL CONTEXTUAL BREADCRUMB (in fixed header)
+    contentHeader.innerHTML = `
+        <button id="navBookTop" class="context-nav-btn" onclick="showBooks()">
+            ${bookName}
+        </button>
+        <button id="navChapterTop" class="context-nav-btn" onclick="displayChapters('${bookName}')">
+            Chapter ${chapterNumber}
+        </button>
+        <button id="navVerseTop" class="context-nav-btn" onclick="displayVerses(${chapterNumber}, JSON.parse('${versesJsonString}'))">
+            Verse ${verseNumber}
+        </button>
+    `;
+    
+    // 3. Render all chapters and verses of the book
+    // ... (rendering logic remains the same)
+    contentDisplay.innerHTML = ''; 
+    const bookHTML = currentBookData.chapters.map(chapter => {
+        let chapterHtml = `<h3 id="Ch${bookName}${chapter.chapter}" class="chapter-heading">Chapter ${chapter.chapter}</h3>`;
+        
+        chapter.verses.forEach(verse => {
+            const verseId = `V${bookName}${chapter.chapter}:${verse.verse}`;
+            let verseClass = 'verse-text';
+
+            if (chapter.chapter === chapterNumber && verse.verse === verseNumber) {
+                verseClass += ' highlighted-verse';
             }
+            
+            chapterHtml += `<p id="${verseId}" class="${verseClass}"><strong>${verse.verse}.</strong> ${verse.text}</p>`;
+        });
+        return chapterHtml;
+    }).join('');
+    
+    contentDisplay.innerHTML = bookHTML;
 
-            // Find the specific chapter object for the breadcrumb construction
-            const currentChapter = currentBookData.chapters.find(c => c.chapter === chapterNumber);
-            
-            // CRITICAL FIX: Ensure the chapter is found before accessing its properties
-            if (!currentChapter) {
-                console.error(`Error: Chapter ${chapterNumber} not found in current book data.`);
-                alert(`Chapter ${chapterNumber} not found.`);
-                return;
-            }
-            // --- FIX END ---
-            
-            const versesJsonString = JSON.stringify(currentChapter.verses).replace(/"/g, '&quot;');
-            
-            // 2. BUILD THE FULL CONTEXTUAL BREADCRUMB (in fixed header)
-            contentHeader.innerHTML = `
-                <button id="navBookTop" class="context-nav-btn" onclick="showBooks()">
-                    ${bookName}
-                </button>
-                <button id="navChapterTop" class="context-nav-btn" onclick="displayChapters('${bookName}')">
-                    Chapter ${chapterNumber}
-                </button>
-                <button id="navVerseTop" class="context-nav-btn" onclick="displayVerses(${chapterNumber}, JSON.parse('${versesJsonString}'))">
-                    Verse ${verseNumber}
-                </button>
-            `;
-
-            // 3. Render all chapters and verses of the book
-            contentDisplay.innerHTML = ''; 
-            const bookHTML = currentBookData.chapters.map(chapter => {
-                let chapterHtml = `<h3 id="Ch${bookName}${chapter.chapter}" class="chapter-heading">Chapter ${chapter.chapter}</h3>`;
-                
-                chapter.verses.forEach(verse => {
-                    const verseId = `V${bookName}${chapter.chapter}:${verse.verse}`;
-                    let verseClass = 'verse-text';
-
-                    if (chapter.chapter === chapterNumber && verse.verse === verseNumber) {
-                        verseClass += ' highlighted-verse';
-                    }
-                    
-                    chapterHtml += `<p id="${verseId}" class="${verseClass}"><strong>${verse.verse}.</strong> ${verse.text}</p>`;
-                });
-                return chapterHtml;
-            }).join('');
-            
-            contentDisplay.innerHTML = bookHTML;
-
-            // 4. SCROLL to the selected verse
-            const targetElementId = `V${bookName}${chapterNumber}:${verseNumber}`;
-            const targetElement = document.getElementById(targetElementId);
-            
-            if (targetElement) {
-                // Scroll the highlighted element to the center of the screen
-                targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
-            }
-        }
+    // 4. SCROLL to the selected verse
+    const targetElementId = `V${bookName}${chapterNumber}:${verseNumber}`;
+    const targetElement = document.getElementById(targetElementId);
+    
+    if (targetElement) {
+        // Scroll the highlighted element to the center of the screen
+        targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+    }
+}
 
         // Initialize the app by loading the book buttons
         loadBookList();
