@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KJV Bible Navigator (Unified Top Nav)</title>
+    <title>KJV Bible Navigator (Fixed Top Nav)</title>
     <style>
         /* BASE STYLES */
         body {
@@ -11,6 +11,8 @@
             margin: 0;
             padding: 10px;
             background-color: #f4f4f9;
+            /* CRUCIAL: Add top padding equal to the header height to prevent content from scrolling under the fixed header. */
+            padding-top: 100px; 
         }
         #container {
             display: flex;
@@ -18,14 +20,27 @@
             gap: 15px;
         }
         
+        /* FIXED HEADER WRAPPER */
+        #fixedHeader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: #fff; /* White background for visibility */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            padding: 10px;
+            box-sizing: border-box; /* Include padding/border in element's total width/height */
+        }
+        
         /* CONTEXTUAL NAVIGATION & SECTION HEADINGS */
         .section-title {
-            margin-top: 10px;
+            margin: 0; /* Remove default margin for fixed element */
             color: #333;
             border-bottom: 2px solid #ccc;
             padding-bottom: 5px;
-            display: flex; /* Allows inline buttons */
-            flex-wrap: wrap; /* Wraps buttons if screen is too narrow */
+            display: flex; 
+            flex-wrap: wrap; 
             align-items: center;
         }
         .context-nav-btn {
@@ -33,7 +48,7 @@
             border: 1px solid #ccc;
             border-radius: 4px;
             cursor: pointer;
-            margin-right: 8px; /* Spacing between breadcrumbs */
+            margin-right: 8px; 
             font-size: 1em;
             display: inline-block;
             transition: background-color 0.1s;
@@ -46,7 +61,7 @@
             opacity: 0.8;
         }
         
-        /* SELECTION BUTTON LISTS */
+        /* SELECTION BUTTON LISTS (Remain below the fixed header) */
         .button-list {
             display: flex;
             flex-wrap: wrap;
@@ -69,7 +84,7 @@
         #chaptersList button { background-color: #007bff; }
         #versesList button { background-color: #ffc107; color: #333; min-width: 30px; padding: 6px 10px; }
 
-        /* CONTENT DISPLAY AREA */
+        /* BIBLE CONTENT STYLES (Unchanged) */
         #contentDisplay {
             padding: 15px;
             border: 1px solid #ccc;
@@ -96,38 +111,48 @@
 </head>
 <body>
 
+    <div id="fixedHeader">
+        <div id="booksHeader">
+            <h2 class="section-title">Select a Book</h2>
+        </div>
+
+        <div id="chaptersHeader" style="display:none;">
+            <h2 class="section-title">
+                <span id="bookContext"></span>
+                <span>Select Chapter:</span>
+            </h2>
+        </div>
+
+        <div id="versesHeader" style="display:none;">
+            <h2 class="section-title">
+                <span id="bookContextVerse"></span>
+                <span id="chapterContextVerse"></span>
+                <span>Select Verse:</span>
+            </h2>
+        </div>
+
+        <div id="contentNavHeader" style="display:none;">
+            <h2 class="section-title" id="contentHeader">
+                </h2>
+        </div>
+    </div>
     <div id="container">
-        
-        <div id="mainView">
-            <div id="booksSection">
-                <h2 class="section-title">Select a Book</h2>
-                <div id="booksList" class="button-list">
-                    </div>
-            </div>
+        <div id="booksSection">
+            <div id="booksList" class="button-list">
+                </div>
+        </div>
 
-            <div id="chaptersSection" style="display:none;">
-                <h2 class="section-title" id="chaptersHeader">
-                    <span id="bookContext"></span>
-                    <span>Select Chapter:</span>
-                </h2>
-                <div id="chaptersList" class="button-list">
-                    </div>
-            </div>
+        <div id="chaptersSection" style="display:none;">
+            <div id="chaptersList" class="button-list">
+                </div>
+        </div>
 
-            <div id="versesSection" style="display:none;">
-                <h2 class="section-title" id="versesHeader">
-                    <span id="bookContextVerse"></span>
-                    <span id="chapterContextVerse"></span>
-                    <span>Select Verse:</span>
-                </h2>
-                <div id="versesList" class="button-list">
-                    </div>
-            </div>
+        <div id="versesSection" style="display:none;">
+            <div id="versesList" class="button-list">
+                </div>
         </div>
 
         <div id="contentSection" style="display:none;">
-            <h2 class="section-title" id="contentHeader">
-                </h2>
             <div id="contentDisplay">
                 </div>
         </div>
@@ -137,7 +162,15 @@
         // ASSUMPTION: The JSON files are in a directory named 'kjv'
         const KJV_DIR = './kjv/';
         
-        // Element references
+        // --- NEW/UPDATED Element references for Fixed Headers ---
+        const fixedHeader = document.getElementById('fixedHeader');
+        const booksHeader = document.getElementById('booksHeader');
+        const chaptersHeader = document.getElementById('chaptersHeader');
+        const versesHeader = document.getElementById('versesHeader');
+        const contentNavHeader = document.getElementById('contentNavHeader');
+        const contentHeader = document.getElementById('contentHeader'); 
+
+        // Content Area references (the scrollable parts)
         const booksSection = document.getElementById('booksSection');
         const chaptersSection = document.getElementById('chaptersSection');
         const versesSection = document.getElementById('versesSection');
@@ -148,7 +181,6 @@
         const bookContext = document.getElementById('bookContext');
         const bookContextVerse = document.getElementById('bookContextVerse');
         const chapterContextVerse = document.getElementById('chapterContextVerse');
-        const contentHeader = document.getElementById('contentHeader'); // New reference for the content header
 
         // State management
         const bookDataCache = {};
@@ -156,8 +188,28 @@
         let currentBookName = null;
         let currentChapterNumber = null;
         
-        // --- View Visibility Functions (Simplified to remove bottom nav hiding) ---
+        // --- Helper function to display only one header group ---
+        function showHeader(activeHeaderId) {
+            booksHeader.style.display = 'none';
+            chaptersHeader.style.display = 'none';
+            versesHeader.style.display = 'none';
+            contentNavHeader.style.display = 'none';
+            
+            if (activeHeaderId === 'books') {
+                booksHeader.style.display = 'block';
+            } else if (activeHeaderId === 'chapters') {
+                chaptersHeader.style.display = 'block';
+            } else if (activeHeaderId === 'verses') {
+                versesHeader.style.display = 'block';
+            } else if (activeHeaderId === 'content') {
+                contentNavHeader.style.display = 'block';
+            }
+        }
+
+
+        // --- View Visibility Functions (Updated to manage fixed header) ---
         function showBooks() {
+            showHeader('books');
             booksSection.style.display = 'block';
             chaptersSection.style.display = 'none';
             versesSection.style.display = 'none';
@@ -166,6 +218,7 @@
         }
 
         function showChapters() {
+            showHeader('chapters');
             booksSection.style.display = 'none';
             chaptersSection.style.display = 'block';
             versesSection.style.display = 'none';
@@ -174,6 +227,7 @@
         }
         
         function showVerses() {
+            showHeader('verses');
             booksSection.style.display = 'none';
             chaptersSection.style.display = 'none';
             versesSection.style.display = 'block';
@@ -182,13 +236,14 @@
         }
 
         function showContent() {
+            showHeader('content');
             booksSection.style.display = 'none';
             chaptersSection.style.display = 'none';
             versesSection.style.display = 'none';
             contentSection.style.display = 'block';
         }
 
-        // --- 1. Load Initial Book List (Unchanged) ---
+        // --- 1. Load Initial Book List (Unchanged logic) ---
         async function loadBookList() {
              try {
                 const response = await fetch(`${KJV_DIR}Books.json`);
@@ -210,13 +265,13 @@
             }
         }
         
-        // --- 2. Display Chapters (Contextual Nav setup unchanged) ---
+        // --- 2. Display Chapters (Unchanged logic, just using new header elements) ---
         async function displayChapters(bookName) {
             document.getElementById('chaptersList').innerHTML = '';
             document.getElementById('versesList').innerHTML = '';
             currentBookName = bookName;
             
-            // UPDATE CONTEXTUAL NAVIGATION for Chapters View
+            // UPDATE CONTEXTUAL NAVIGATION for Chapters View (in fixed header)
             bookContext.innerHTML = `<button id="navBookTop" class="context-nav-btn" onclick="showBooks()">${bookName}</button>`;
             
             showChapters(); 
@@ -250,12 +305,12 @@
             });
         }
 
-        // --- 3. Display Verses (Contextual Nav setup unchanged) ---
+        // --- 3. Display Verses (Unchanged logic, just using new header elements) ---
         function displayVerses(chapterNumber, verses) {
             document.getElementById('versesList').innerHTML = '';
             currentChapterNumber = chapterNumber;
 
-            // UPDATE CONTEXTUAL NAVIGATION for Verses View
+            // UPDATE CONTEXTUAL NAVIGATION for Verses View (in fixed header)
             bookContextVerse.innerHTML = `<button id="navBookTop" class="context-nav-btn" onclick="showBooks()">${currentBookName}</button>`;
             chapterContextVerse.innerHTML = `<button id="navChapterTop" class="context-nav-btn" onclick="displayChapters('${currentBookName}')">Chapter ${chapterNumber}</button>`;
             
@@ -274,13 +329,13 @@
             });
         }
 
-        // --- 4. Display FULL Book Content and Scroll to Verse (MAJOR UPDATE) ---
+        // --- 4. Display FULL Book Content and Scroll to Verse (Unchanged logic) ---
         function displayFullBook(bookName, chapterNumber, verseNumber) {
             
-            // 1. Show the content view
+            // 1. Show the content view (and the correct fixed header)
             showContent();
             
-            // 2. BUILD THE FULL CONTEXTUAL BREADCRUMB (Book > Chapter > Verse)
+            // 2. BUILD THE FULL CONTEXTUAL BREADCRUMB (in fixed header)
             contentHeader.innerHTML = `
                 <button id="navBookTop" class="context-nav-btn" onclick="showBooks()">
                     ${bookName}
@@ -294,7 +349,7 @@
             `;
 
             // 3. Render all chapters and verses of the book
-            contentDisplay.innerHTML = ''; // Clear content
+            contentDisplay.innerHTML = ''; 
             const bookHTML = currentBookData.chapters.map(chapter => {
                 let chapterHtml = `<h3 id="Ch${bookName}${chapter.chapter}" class="chapter-heading">Chapter ${chapter.chapter}</h3>`;
                 
@@ -319,8 +374,7 @@
             const targetElement = document.getElementById(targetElementId);
             
             if (targetElement) {
-                // Scroll the content display to bring the verse to the top
-                // We scroll the window since the breadcrumb is at the top of the viewport
+                // Scroll the window to bring the verse to the top of the scrollable area (just below the fixed header)
                 targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         }
