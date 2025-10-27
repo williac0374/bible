@@ -3,15 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KJV Bible Navigator 8</title>
+    <title>KJV Bible Navigator (Nature Theme)</title>
     <style>
+        /* --- NATURE MEETS RELIGION THEME PALETTE --- */
+        /* Primary: #4CAF50 (Forest Green - Life/Growth) */
+        /* Secondary: #007bff (Deep Sky Blue - Divinity/Water) */
+        /* Accent: #FFC107 (Goldenrod - Light/Glory) */
+        /* Background: #f7f3e8 (Light Cream/Earth) */
+        /* Neutral: #ffffff (White/Purity) */
+        
         /* BASE STYLES */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 10px;
-            background-color: #f4f4f9;
-            /* CRUCIAL: Add top padding equal to the header height to prevent content from scrolling under the fixed header. */
+            background-color: #f7f3e8; /* Light Cream/Earth Background */
             padding-top: 100px; 
         }
         #container {
@@ -26,18 +32,18 @@
             top: 0;
             left: 0;
             width: 100%;
-            background-color: #fff; /* White background for visibility */
+            background-color: #ffffff; /* Clean White */
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             z-index: 1000;
             padding: 10px;
-            box-sizing: border-box; /* Include padding/border in element's total width/height */
+            box-sizing: border-box;
         }
         
         /* CONTEXTUAL NAVIGATION & SECTION HEADINGS */
         .section-title {
             margin: 0; 
             color: #333;
-            border-bottom: 2px solid #ccc;
+            border-bottom: 2px solid #4CAF50; /* Green Separator */
             padding-bottom: 5px;
             display: flex; 
             flex-wrap: wrap; 
@@ -45,23 +51,22 @@
         }
         .context-nav-btn {
             padding: 5px 10px;
-            border: 1px solid #ccc;
+            border: 1px solid #c8e6c9; /* Lighter Green Border */
             border-radius: 4px;
             cursor: pointer;
             margin-right: 8px; 
             font-size: 1em;
             display: inline-block;
             transition: background-color 0.1s;
-            /* Allow long press */
             -webkit-user-select: none;
             -moz-user-select: none;
             -ms-user-select: none;
             user-select: none;
         }
-        /* Specific button colors for differentiation */
-        #navBookTop { background-color: #d4edda; color: #1e7e34; }
-        #navChapterTop { background-color: #cce5ff; color: #0056b3; }
-        #navVerseTop { background-color: #fff8e1; color: #e0a800; }
+        /* Specific button colors for differentiation (Nature Tones) */
+        #navBookTop { background-color: #e8f5e9; color: #1e7e34; } /* Pale Green */
+        #navChapterTop { background-color: #e3f2fd; color: #007bff; } /* Pale Blue */
+        #navVerseTop { background-color: #fffde7; color: #e0a800; } /* Pale Gold */
         .context-nav-btn:hover {
             opacity: 0.8;
         }
@@ -84,34 +89,35 @@
             flex-grow: 1;
             min-width: 45px;
             text-align: center;
+            transition: background-color 0.2s;
         }
-        #booksList button { background-color: #28a745; }
-        #chaptersList button { background-color: #007bff; }
-        #versesList button { background-color: #ffc107; color: #333; min-width: 30px; padding: 6px 10px; }
+        /* Color Mapping: Book=Green (Root), Chapter=Blue (Path), Verse=Gold (Light) */
+        #booksList button { background-color: #4CAF50; }     /* Forest Green */
+        #chaptersList button { background-color: #2196F3; }   /* Lighter Blue */
+        #versesList button { background-color: #FFC107; color: #333; min-width: 30px; padding: 6px 10px; } /* Goldenrod */
 
         /* BIBLE CONTENT STYLES */
         #contentDisplay {
             padding: 15px;
-            border: 1px solid #ccc;
-            background-color: #fff;
+            border: 1px solid #e0e0e0;
+            background-color: #ffffff; /* White reading area */
             border-radius: 5px;
             line-height: 1.6;
             text-align: justify;
         }
-        /* CRUCIAL: Set a default font-size for P elements for consistency and the prompt. */
         #contentDisplay p {
             font-size: 16px; /* Default font size (in pixels) */
         }
         .chapter-heading {
             font-size: 1.5em;
-            color: #007bff;
-            border-bottom: 1px dashed #ccc;
+            color: #4CAF50; /* Green Chapter Headings */
+            border-bottom: 1px dashed #c8e6c9;
             padding-bottom: 5px;
             margin-top: 20px;
         }
         .highlighted-verse {
-            background-color: #fffacd;
-            border: 2px solid #ffcc00;
+            background-color: #fff8e1; /* Very pale gold highlight */
+            border: 2px solid #ffeb3b; /* Brighter gold border */
             padding: 5px;
             margin: 5px 0;
             border-radius: 3px;
