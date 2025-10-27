@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KJV Bible Navigator 1</title>
+    <title>KJV Bible Navigator 2</title>
     <style>
         /* --- NATURE MEETS RELIGION THEME PALETTE --- */
         /* Primary: #4CAF50 (Forest Green - Life/Growth) */
@@ -439,7 +439,7 @@
             });
         }
 
-     // --- 4. Display FULL Book Content and Scroll to Verse (FIXED Chapter Search) ---
+// --- 4. Display FULL Book Content and Scroll to Verse (FINAL FIX) ---
 function displayFullBook(bookName, chapterNumber, verseNumber) {
     
     showContent();
@@ -454,15 +454,15 @@ function displayFullBook(bookName, chapterNumber, verseNumber) {
         return;
     }
 
-    // FIX: Ensure the chapter number being searched is consistently treated as an integer (number).
-    // This handles cases where chapterNumber might be a string (e.g., "1") while the JSON uses numbers (e.g., 1).
+    // FIX 1: Ensure the chapter number being searched is consistently treated as an integer (number).
     const chapterNumInt = parseInt(chapterNumber, 10);
     
     // Find the specific chapter object for the breadcrumb construction
-    const currentChapter = currentBookData.chapters.find(c => c.chapter === chapterNumInt);
+    // Use the parsed integer for reliable comparison.
+    const currentChapter = currentBookData.chapters.find(c => c.chapter === chapterNumInt); 
     
-    // CRITICAL CHECK: Ensure the chapter is found before accessing its properties
     if (!currentChapter) {
+        // This is the line that was throwing the error (or the line right after it)
         console.error(`Error: Chapter ${chapterNumber} not found in current book data.`);
         alert(`Chapter ${chapterNumber} not found.`);
         return;
@@ -482,9 +482,11 @@ function displayFullBook(bookName, chapterNumber, verseNumber) {
             Verse ${verseNumber}
         </button>
     `;
-    
+
     // 3. Render all chapters and verses of the book
-    // ... (rendering logic remains the same)
+    // FIX 2: Ensure the verseNumber is also treated as a number for consistent highlighting comparison.
+    const verseNumInt = parseInt(verseNumber, 10);
+    
     contentDisplay.innerHTML = ''; 
     const bookHTML = currentBookData.chapters.map(chapter => {
         let chapterHtml = `<h3 id="Ch${bookName}${chapter.chapter}" class="chapter-heading">Chapter ${chapter.chapter}</h3>`;
@@ -493,7 +495,8 @@ function displayFullBook(bookName, chapterNumber, verseNumber) {
             const verseId = `V${bookName}${chapter.chapter}:${verse.verse}`;
             let verseClass = 'verse-text';
 
-            if (chapter.chapter === chapterNumber && verse.verse === verseNumber) {
+            // Use the parsed integer for the chapter comparison and the new verseNumInt for verse comparison.
+            if (chapter.chapter === chapterNumInt && verse.verse === verseNumInt) {
                 verseClass += ' highlighted-verse';
             }
             
@@ -505,11 +508,12 @@ function displayFullBook(bookName, chapterNumber, verseNumber) {
     contentDisplay.innerHTML = bookHTML;
 
     // 4. SCROLL to the selected verse
+    // Note: If you don't parse the verseNumber, the template literal here might create a string ID. 
+    // We rely on the input verseNumber being correct here, but parsing it defensively is also safe.
     const targetElementId = `V${bookName}${chapterNumber}:${verseNumber}`;
     const targetElement = document.getElementById(targetElementId);
     
     if (targetElement) {
-        // Scroll the highlighted element to the center of the screen
         targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
     }
 }
