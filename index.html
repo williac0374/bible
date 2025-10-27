@@ -328,17 +328,19 @@
             });
         }
 
-        // --- 4. Display FULL Book Content and Scroll to Verse (FINAL UPDATE) ---
+        // --- 4. Display FULL Book Content and Scroll to Verse (FINAL FIX) ---
         function displayFullBook(bookName, chapterNumber, verseNumber) {
             
             // 1. Show the content view (and the correct fixed header)
             showContent();
             
-            // Find the current chapter data to pass to displayVerses
+            // Find the current chapter data to use for the verse button's onclick
             const currentChapter = currentBookData.chapters.find(c => c.chapter === chapterNumber);
             
+            // FIX: Convert the verses array to a JSON string and escape quotes for HTML insertion
+            const versesJsonString = JSON.stringify(currentChapter.verses).replace(/"/g, '&quot;');
+            
             // 2. BUILD THE FULL CONTEXTUAL BREADCRUMB (in fixed header)
-            // The Verse button is set up to go back to the Verses selection for the current chapter
             contentHeader.innerHTML = `
                 <button id="navBookTop" class="context-nav-btn" onclick="showBooks()">
                     ${bookName}
@@ -346,7 +348,7 @@
                 <button id="navChapterTop" class="context-nav-btn" onclick="displayChapters('${bookName}')">
                     Chapter ${chapterNumber}
                 </button>
-                <button id="navVerseTop" class="context-nav-btn" onclick="displayVerses(${chapterNumber}, currentChapter.verses)">
+                <button id="navVerseTop" class="context-nav-btn" onclick="displayVerses(${chapterNumber}, JSON.parse('${versesJsonString}'))">
                     Verse ${verseNumber}
                 </button>
             `;
