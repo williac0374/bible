@@ -5,12 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KJV Bible Navigator (Mobile)</title>
     <style>
-        /* Basic styling for readability and button appearance */
+        /* BASE STYLES */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 10px;
             background-color: #f4f4f9;
+            /* Add padding to the bottom of the body equal to the height of the fixed navigation */
+            padding-bottom: 70px; 
         }
         #container {
             display: flex;
@@ -29,7 +31,6 @@
             gap: 8px;
             margin-top: 10px;
         }
-        /* Style for primary navigation buttons (Books, Chapters, Verses) */
         button {
             padding: 10px 15px;
             border: none;
@@ -37,21 +38,15 @@
             cursor: pointer;
             color: white;
             font-weight: bold;
-            flex-grow: 1; /* Makes buttons fill space on mobile */
+            flex-grow: 1;
             min-width: 45px;
             text-align: center;
         }
+        
+        /* NAVIGATION BUTTON STYLES */
         #booksList button { background-color: #28a745; }
-        #booksList button:hover { background-color: #1e7e34; }
         #chaptersList button { background-color: #007bff; }
-        #chaptersList button:hover { background-color: #0056b3; }
-        #versesList button { 
-            background-color: #ffc107; 
-            color: #333; 
-            min-width: 30px; 
-            padding: 6px 10px; 
-        }
-        #versesList button:hover { background-color: #e0a800; }
+        #versesList button { background-color: #ffc107; color: #333; min-width: 30px; padding: 6px 10px; }
         
         /* CONTENT DISPLAY AREA */
         #contentDisplay {
@@ -62,36 +57,47 @@
             line-height: 1.6;
             text-align: justify;
         }
-        .verse-text {
-            /* Ensures verse number is slightly distinct */
-            margin-bottom: 10px;
-        }
         .chapter-heading {
-            /* Style for Chapter number headings */
             font-size: 1.5em;
             color: #007bff;
             border-bottom: 1px dashed #ccc;
             padding-bottom: 5px;
             margin-top: 20px;
         }
-        /* Highlight the selected verse */
         .highlighted-verse {
-            background-color: #fffacd; /* Light yellow background */
+            background-color: #fffacd;
             border: 2px solid #ffcc00;
             padding: 5px;
             margin: 5px 0;
             border-radius: 3px;
         }
+        
+        /* FIXED BOTTOM NAVIGATION BAR */
+        #bottomNav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            background-color: #333;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000; /* Ensure it stays above other content */
+        }
+        #bottomNav button {
+            flex-basis: 30%; /* Distribute space evenly */
+            margin: 0 5px;
+            font-size: 0.9em;
+        }
+        #navBookBtn { background-color: #28a745; }
+        #navChapterBtn { background-color: #007bff; }
+        #navVerseBtn { background-color: #ffc107; color: #333; }
     </style>
 </head>
 <body>
 
     <div id="container">
-        <div id="navControls">
-            <button id="backToBooks" style="display:none;" onclick="showBooks()">← Back to Books</button>
-            <button id="backToChapters" style="display:none;" onclick="showChapters()">← Back to Chapters</button>
-        </div>
-        
         <div id="mainView">
             <div id="booksSection">
                 <h2 class="section-title">Select a Book</h2>
@@ -119,73 +125,74 @@
         </div>
     </div>
 
+    <div id="bottomNav" style="display:none;">
+        <button id="navBookBtn">Book</button>
+        <button id="navChapterBtn">Chapter</button>
+        <button id="navVerseBtn">Verse</button>
+    </div>
+
     <script>
         // ASSUMPTION: The JSON files are in a directory named 'kjv'
         const KJV_DIR = './kjv/';
         
         // Element references
-        const mainView = document.getElementById('mainView');
         const booksSection = document.getElementById('booksSection');
         const chaptersSection = document.getElementById('chaptersSection');
         const versesSection = document.getElementById('versesSection');
         const contentSection = document.getElementById('contentSection');
-        
-        const booksListElement = document.getElementById('booksList');
-        const chaptersListElement = document.getElementById('chaptersList');
-        const versesListElement = document.getElementById('versesList');
+        const bottomNav = document.getElementById('bottomNav');
         const contentDisplay = document.getElementById('contentDisplay');
-        
-        const backToBooksButton = document.getElementById('backToBooks');
-        const backToChaptersButton = document.getElementById('backToChapters');
-        
+
+        // Nav button references
+        const navBookBtn = document.getElementById('navBookBtn');
+        const navChapterBtn = document.getElementById('navChapterBtn');
+        const navVerseBtn = document.getElementById('navVerseBtn');
+
         // State management
         const bookDataCache = {};
         let currentBookData = null;
         let currentBookName = null;
         let currentChapterNumber = null;
-
+        
         // --- View Visibility Functions ---
         function showBooks() {
-            backToBooksButton.style.display = 'none';
-            backToChaptersButton.style.display = 'none';
+            bottomNav.style.display = 'none';
             booksSection.style.display = 'block';
             chaptersSection.style.display = 'none';
             versesSection.style.display = 'none';
             contentSection.style.display = 'none';
-            mainView.scrollIntoView({ behavior: 'smooth' });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function showChapters() {
-            backToBooksButton.style.display = 'block';
-            backToChaptersButton.style.display = 'none';
+            bottomNav.style.display = 'none';
             booksSection.style.display = 'none';
             chaptersSection.style.display = 'block';
             versesSection.style.display = 'none';
             contentSection.style.display = 'none';
-            mainView.scrollIntoView({ behavior: 'smooth' });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         
         function showVerses() {
-            backToBooksButton.style.display = 'none';
-            backToChaptersButton.style.display = 'block';
+            bottomNav.style.display = 'none';
             booksSection.style.display = 'none';
             chaptersSection.style.display = 'none';
             versesSection.style.display = 'block';
             contentSection.style.display = 'none';
-            mainView.scrollIntoView({ behavior: 'smooth' });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function showContent() {
-            backToBooksButton.style.display = 'block';
-            backToChaptersButton.style.display = 'none'; // We return to books from here
+            bottomNav.style.display = 'flex'; // Show fixed nav
             booksSection.style.display = 'none';
             chaptersSection.style.display = 'none';
             versesSection.style.display = 'none';
             contentSection.style.display = 'block';
         }
 
-        // --- 1. Load Initial Book List ---
+        // --- 1. Load Initial Book List (Unchanged) ---
         async function loadBookList() {
+            // ... (keep loadBookList function from previous version here) ...
             try {
                 const response = await fetch(`${KJV_DIR}Books.json`);
                 if (!response.ok) {
@@ -197,70 +204,59 @@
                     const button = document.createElement('button');
                     button.textContent = bookName;
                     button.onclick = () => displayChapters(bookName);
-                    booksListElement.appendChild(button);
+                    document.getElementById('booksList').appendChild(button);
                 });
                 
             } catch (error) {
                 console.error("Error loading book list:", error);
-                booksListElement.innerHTML = `<p style="color:red;">Error loading KJV Bible data. Check the console for details and ensure all 66 book JSON files (plus Books.json) are in a folder named 'kjv'.</p>`;
+                document.getElementById('booksList').innerHTML = `<p style="color:red;">Error loading KJV Bible data. Check the console for details and ensure all 66 book JSON files (plus Books.json) are in a folder named 'kjv'.</p>`;
             }
         }
-
-        // --- 2. Display Chapters for a Selected Book ---
+        
+        // --- 2. Display Chapters (Slightly modified to clear state) ---
         async function displayChapters(bookName) {
-            
-            // Clear lists and set state
-            chaptersListElement.innerHTML = '';
-            versesListElement.innerHTML = '';
-            contentDisplay.innerHTML = '';
+            document.getElementById('chaptersList').innerHTML = '';
+            document.getElementById('versesList').innerHTML = '';
             currentBookName = bookName;
             
-            // Show the chapters view
             document.getElementById('currentBookName').textContent = bookName;
             showChapters();
             
-            // Load the specific book data
             if (!bookDataCache[bookName]) {
                 try {
                     const fileName = `${bookName}.json`;
                     const response = await fetch(`${KJV_DIR}${fileName}`);
                     if (!response.ok) {
-                        chaptersListElement.innerHTML = `<p style="color:red;">Error: Could not find **${fileName}** in the 'kjv' folder.</p>`;
+                        document.getElementById('chaptersList').innerHTML = `<p style="color:red;">Error: Could not find **${fileName}** in the 'kjv' folder.</p>`;
                         return;
                     }
                     bookDataCache[bookName] = await response.json();
                 } catch (error) {
                     console.error(`Error fetching ${bookName} data:`, error);
-                    chaptersListElement.innerHTML = `<p style="color:red;">A network error occurred while fetching ${bookName}.json.</p>`;
+                    document.getElementById('chaptersList').innerHTML = `<p style="color:red;">A network error occurred while fetching ${bookName}.json.</p>`;
                     return;
                 }
             }
             
             currentBookData = bookDataCache[bookName];
 
-            // Create a button for every chapter
             currentBookData.chapters.forEach(chapter => {
                 const chapterNumber = chapter.chapter;
                 const button = document.createElement('button');
                 button.textContent = chapterNumber;
                 button.onclick = () => displayVerses(chapterNumber, chapter.verses);
-                chaptersListElement.appendChild(button);
+                document.getElementById('chaptersList').appendChild(button);
             });
         }
 
-        // --- 3. Display Verses for a Selected Chapter ---
+        // --- 3. Display Verses (Slightly modified to clear state) ---
         function displayVerses(chapterNumber, verses) {
-            
-            // Clear list and set state
-            versesListElement.innerHTML = '';
-            contentDisplay.innerHTML = '';
+            document.getElementById('versesList').innerHTML = '';
             currentChapterNumber = chapterNumber;
 
-            // Show the verses view
             document.getElementById('currentChapterNumber').textContent = chapterNumber;
             showVerses();
             
-            // Create a button for every verse
             verses.forEach(verse => {
                 const verseNumber = verse.verse;
                 
@@ -269,22 +265,32 @@
                 
                 // When clicked, display the final content
                 button.onclick = () => displayFullBook(currentBookName, chapterNumber, verseNumber);
-                versesListElement.appendChild(button);
+                document.getElementById('versesList').appendChild(button);
             });
         }
 
-        // --- 4. Display FULL Book Content and Scroll to Verse ---
+        // --- 4. Display FULL Book Content and Scroll to Verse (Unchanged logic) ---
         function displayFullBook(bookName, chapterNumber, verseNumber) {
             
-            // 1. Show the content view
+            // Show the content view and fixed nav
             showContent();
             
-            // 2. Set reference header
+            // Set reference header
             const reference = `${bookName} ${chapterNumber}:${verseNumber}`;
             document.getElementById('currentReference').textContent = reference;
-            contentDisplay.innerHTML = ''; // Clear existing content
+            contentDisplay.innerHTML = ''; 
             
-            // 3. Render all chapters and verses of the book
+            // Set up Fixed Nav button handlers for easy jump
+            // NavBookBtn now shows *all* books
+            navBookBtn.onclick = showBooks;
+            // NavChapterBtn now shows chapters for the *current* book
+            navChapterBtn.onclick = () => displayChapters(currentBookName); 
+            // NavVerseBtn now shows verses for the *current* chapter
+            const currentChapter = currentBookData.chapters.find(c => c.chapter === chapterNumber);
+            navVerseBtn.onclick = () => displayVerses(currentChapter.chapter, currentChapter.verses);
+
+
+            // Render all chapters and verses of the book
             const bookHTML = currentBookData.chapters.map(chapter => {
                 let chapterHtml = `<h3 id="Ch${bookName}${chapter.chapter}" class="chapter-heading">Chapter ${chapter.chapter}</h3>`;
                 
@@ -304,7 +310,7 @@
             
             contentDisplay.innerHTML = bookHTML;
 
-            // 4. SCROLL to the selected verse
+            // SCROLL to the selected verse
             const targetElementId = `V${bookName}${chapterNumber}:${verseNumber}`;
             const targetElement = document.getElementById(targetElementId);
             
@@ -313,15 +319,6 @@
                 targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         }
-
-        // --- Event Handlers for Back Buttons ---
-        backToChaptersButton.onclick = () => {
-            // Re-display chapters using the cached book name
-            displayChapters(currentBookName);
-        };
-        
-        backToBooksButton.onclick = showBooks;
-
 
         // Initialize the app by loading the book buttons
         loadBookList();
