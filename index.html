@@ -1,13 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name='apple-mobile-web-app-capable' content='yes' />
-<meta name='viewport' content='initial-scale=1.0, maximum-scale=1.0, user-scalable=0, width=device-width, height=device-height' />
-<meta name='apple-mobile-web-app-status-bar-style' content='black-translucent' />
-    <title>KJV Bible Navigator (Mobile)</title>
-    <link rel="canonical" href="https://williac0374.github.io/bible/" />
-    <link rel="manifest" href="/bible/manifest.webmanifest">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KJV Bible Navigator (Contextual)</title>
     <style>
         /* BASE STYLES */
         body {
@@ -15,7 +11,6 @@
             margin: 0;
             padding: 10px;
             background-color: #f4f4f9;
-            /* Add padding to the bottom of the body equal to the height of the fixed navigation */
             padding-bottom: 70px; 
         }
         #container {
@@ -35,6 +30,8 @@
             gap: 8px;
             margin-top: 10px;
         }
+        
+        /* NAVIGATION BUTTON STYLES (Primary Selection) */
         button {
             padding: 10px 15px;
             border: none;
@@ -46,11 +43,26 @@
             min-width: 45px;
             text-align: center;
         }
-        
-        /* NAVIGATION BUTTON STYLES */
         #booksList button { background-color: #28a745; }
         #chaptersList button { background-color: #007bff; }
         #versesList button { background-color: #ffc107; color: #333; min-width: 30px; padding: 6px 10px; }
+
+        /* CONTEXTUAL NAVIGATION STYLES (Top of Screen) */
+        .context-nav-btn {
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 5px;
+            font-size: 1.1em;
+            display: inline-block;
+            transition: background-color 0.1s;
+        }
+        #navBookTop { background-color: #d4edda; color: #1e7e34; } /* Book color */
+        #navChapterTop { background-color: #cce5ff; color: #0056b3; } /* Chapter color */
+        .context-nav-btn:hover {
+            opacity: 0.8;
+        }
         
         /* CONTENT DISPLAY AREA */
         #contentDisplay {
@@ -87,10 +99,10 @@
             padding: 10px 0;
             background-color: #333;
             box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
-            z-index: 1000; /* Ensure it stays above other content */
+            z-index: 1000;
         }
         #bottomNav button {
-            flex-basis: 30%; /* Distribute space evenly */
+            flex-basis: 30%;
             margin: 0 5px;
             font-size: 0.9em;
         }
@@ -102,6 +114,7 @@
 <body>
 
     <div id="container">
+        
         <div id="mainView">
             <div id="booksSection">
                 <h2 class="section-title">Select a Book</h2>
@@ -110,13 +123,20 @@
             </div>
 
             <div id="chaptersSection" style="display:none;">
-                <h2 class="section-title">Select Chapter in <span id="currentBookName"></span></h2>
+                <h2 class="section-title">
+                    <span id="bookContext"></span>
+                    <span>Select Chapter:</span>
+                </h2>
                 <div id="chaptersList" class="button-list">
                     </div>
             </div>
 
             <div id="versesSection" style="display:none;">
-                <h2 class="section-title">Select Verse from Chapter <span id="currentChapterNumber"></span></h2>
+                <h2 class="section-title">
+                    <span id="bookContextVerse"></span>
+                    <span id="chapterContextVerse"></span>
+                    <span>Select Verse:</span>
+                </h2>
                 <div id="versesList" class="button-list">
                     </div>
             </div>
@@ -147,7 +167,12 @@
         const bottomNav = document.getElementById('bottomNav');
         const contentDisplay = document.getElementById('contentDisplay');
 
-        // Nav button references
+        // Contextual Navigation references
+        const bookContext = document.getElementById('bookContext');
+        const bookContextVerse = document.getElementById('bookContextVerse');
+        const chapterContextVerse = document.getElementById('chapterContextVerse');
+
+        // Nav button references (bottom fixed bar)
         const navBookBtn = document.getElementById('navBookBtn');
         const navChapterBtn = document.getElementById('navChapterBtn');
         const navVerseBtn = document.getElementById('navVerseBtn');
@@ -158,7 +183,7 @@
         let currentBookName = null;
         let currentChapterNumber = null;
         
-        // --- View Visibility Functions ---
+        // --- View Visibility Functions (Unchanged) ---
         function showBooks() {
             bottomNav.style.display = 'none';
             booksSection.style.display = 'block';
@@ -187,7 +212,7 @@
         }
 
         function showContent() {
-            bottomNav.style.display = 'flex'; // Show fixed nav
+            bottomNav.style.display = 'flex';
             booksSection.style.display = 'none';
             chaptersSection.style.display = 'none';
             versesSection.style.display = 'none';
@@ -196,8 +221,7 @@
 
         // --- 1. Load Initial Book List (Unchanged) ---
         async function loadBookList() {
-            // ... (keep loadBookList function from previous version here) ...
-            try {
+             try {
                 const response = await fetch(`${KJV_DIR}Books.json`);
                 if (!response.ok) {
                     throw new Error("Could not find Books.json in the 'kjv' folder.");
@@ -217,15 +241,19 @@
             }
         }
         
-        // --- 2. Display Chapters (Slightly modified to clear state) ---
+        // --- 2. Display Chapters (UPDATED for Contextual Nav) ---
         async function displayChapters(bookName) {
             document.getElementById('chaptersList').innerHTML = '';
             document.getElementById('versesList').innerHTML = '';
             currentBookName = bookName;
             
-            document.getElementById('currentBookName').textContent = bookName;
-            showChapters();
+            // 1. UPDATE CONTEXTUAL NAVIGATION
+            // In the Chapters view, only the Book link is shown
+            bookContext.innerHTML = `<button id="navBookTop" class="context-nav-btn" onclick="showBooks()">${bookName}</button>`;
             
+            showChapters(); // Show the chapters view
+            
+            // Load book data (from cache or fetch)
             if (!bookDataCache[bookName]) {
                 try {
                     const fileName = `${bookName}.json`;
@@ -244,6 +272,7 @@
             
             currentBookData = bookDataCache[bookName];
 
+            // Create chapter buttons
             currentBookData.chapters.forEach(chapter => {
                 const chapterNumber = chapter.chapter;
                 const button = document.createElement('button');
@@ -253,14 +282,19 @@
             });
         }
 
-        // --- 3. Display Verses (Slightly modified to clear state) ---
+        // --- 3. Display Verses (UPDATED for Contextual Nav) ---
         function displayVerses(chapterNumber, verses) {
             document.getElementById('versesList').innerHTML = '';
             currentChapterNumber = chapterNumber;
 
-            document.getElementById('currentChapterNumber').textContent = chapterNumber;
-            showVerses();
+            // 1. UPDATE CONTEXTUAL NAVIGATION
+            // In the Verses view, both Book and Chapter links are shown
+            bookContextVerse.innerHTML = `<button id="navBookTop" class="context-nav-btn" onclick="showBooks()">${currentBookName}</button>`;
+            chapterContextVerse.innerHTML = `<button id="navChapterTop" class="context-nav-btn" onclick="displayChapters('${currentBookName}')">Chapter ${chapterNumber}</button>`;
             
+            showVerses(); // Show the verses view
+            
+            // Create verse buttons
             verses.forEach(verse => {
                 const verseNumber = verse.verse;
                 
@@ -285,11 +319,12 @@
             contentDisplay.innerHTML = ''; 
             
             // Set up Fixed Nav button handlers for easy jump
-            // NavBookBtn now shows *all* books
+            navBookBtn.textContent = `Book: ${bookName}`;
+            navChapterBtn.textContent = `Chapter: ${chapterNumber}`;
+            navVerseBtn.textContent = `Verse: ${verseNumber}`;
+
             navBookBtn.onclick = showBooks;
-            // NavChapterBtn now shows chapters for the *current* book
             navChapterBtn.onclick = () => displayChapters(currentBookName); 
-            // NavVerseBtn now shows verses for the *current* chapter
             const currentChapter = currentBookData.chapters.find(c => c.chapter === chapterNumber);
             navVerseBtn.onclick = () => displayVerses(currentChapter.chapter, currentChapter.verses);
 
@@ -319,7 +354,6 @@
             const targetElement = document.getElementById(targetElementId);
             
             if (targetElement) {
-                // Scroll the content display to bring the verse to the top
                 targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         }
