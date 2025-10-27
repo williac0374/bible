@@ -48,7 +48,7 @@
             border: 1px solid #ccc;
             border-radius: 4px;
             cursor: pointer;
-            margin-right: 8px; 
+            margin-right: 8px; /* Spacing between breadcrumbs */
             font-size: 1em;
             display: inline-block;
             transition: background-color 0.1s;
@@ -84,7 +84,7 @@
         #chaptersList button { background-color: #007bff; }
         #versesList button { background-color: #ffc107; color: #333; min-width: 30px; padding: 6px 10px; }
 
-        /* BIBLE CONTENT STYLES (Unchanged) */
+        /* BIBLE CONTENT STYLES */
         #contentDisplay {
             padding: 15px;
             border: 1px solid #ccc;
@@ -163,7 +163,6 @@
         const KJV_DIR = './kjv/';
         
         // --- NEW/UPDATED Element references for Fixed Headers ---
-        const fixedHeader = document.getElementById('fixedHeader');
         const booksHeader = document.getElementById('booksHeader');
         const chaptersHeader = document.getElementById('chaptersHeader');
         const versesHeader = document.getElementById('versesHeader');
@@ -243,7 +242,7 @@
             contentSection.style.display = 'block';
         }
 
-        // --- 1. Load Initial Book List (Unchanged logic) ---
+        // --- 1. Load Initial Book List ---
         async function loadBookList() {
              try {
                 const response = await fetch(`${KJV_DIR}Books.json`);
@@ -265,7 +264,7 @@
             }
         }
         
-        // --- 2. Display Chapters (Unchanged logic, just using new header elements) ---
+        // --- 2. Display Chapters ---
         async function displayChapters(bookName) {
             document.getElementById('chaptersList').innerHTML = '';
             document.getElementById('versesList').innerHTML = '';
@@ -305,7 +304,7 @@
             });
         }
 
-        // --- 3. Display Verses (Unchanged logic, just using new header elements) ---
+        // --- 3. Display Verses ---
         function displayVerses(chapterNumber, verses) {
             document.getElementById('versesList').innerHTML = '';
             currentChapterNumber = chapterNumber;
@@ -329,13 +328,17 @@
             });
         }
 
-        // --- 4. Display FULL Book Content and Scroll to Verse (Unchanged logic) ---
+        // --- 4. Display FULL Book Content and Scroll to Verse (FINAL UPDATE) ---
         function displayFullBook(bookName, chapterNumber, verseNumber) {
             
             // 1. Show the content view (and the correct fixed header)
             showContent();
             
+            // Find the current chapter data to pass to displayVerses
+            const currentChapter = currentBookData.chapters.find(c => c.chapter === chapterNumber);
+            
             // 2. BUILD THE FULL CONTEXTUAL BREADCRUMB (in fixed header)
+            // The Verse button is set up to go back to the Verses selection for the current chapter
             contentHeader.innerHTML = `
                 <button id="navBookTop" class="context-nav-btn" onclick="showBooks()">
                     ${bookName}
@@ -343,7 +346,7 @@
                 <button id="navChapterTop" class="context-nav-btn" onclick="displayChapters('${bookName}')">
                     Chapter ${chapterNumber}
                 </button>
-                <button id="navVerseTop" class="context-nav-btn" onclick="displayVerses(${chapterNumber}, currentBookData.chapters.find(c => c.chapter === chapterNumber).verses)">
+                <button id="navVerseTop" class="context-nav-btn" onclick="displayVerses(${chapterNumber}, currentChapter.verses)">
                     Verse ${verseNumber}
                 </button>
             `;
