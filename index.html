@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KJV Bible Navigator (3)</title>
+    <title>KJV Bible Navigator 4</title>
     <style>
         /* BASE STYLES */
         body {
@@ -176,7 +176,8 @@
         let currentBookData = null;
         let currentBookName = null;
         let currentChapterNumber = null;
-        // NEW GLOBAL: Default font size from CSS
+        let currentVerseNumber = null; // New state variable to track current verse
+        // GLOBAL: Default font size from CSS
         let currentFontSize = 16; 
         
         // --- Element References ---
@@ -245,6 +246,7 @@
                 // Short click detected: clear the timer and proceed with the default action
                 clearTimeout(pressTimer);
                 pressTimer = null;
+                
                 // Since we used preventDefault in startPress, we must manually trigger the 
                 // short-click behavior (displaying verses) if the press was short.
                 if (event.target.id === 'navVerseTop') {
@@ -253,39 +255,38 @@
                          // Find the correct onclick logic from the element itself
                         const onclickAttr = event.target.getAttribute('onclick');
                         if(onclickAttr) {
-                            eval(onclickAttr); // Execute the stored onclick logic
+                            // Use setTimeout to ensure this runs after the main call stack clears
+                            setTimeout(() => eval(onclickAttr), 0);
                         }
                     }
                 }
             }
         }
         
+        // --- FIX: Robust font size prompt using global state ---
         function showFontSizePrompt() {
             const newSize = prompt(`Enter new text size in pixels (current size: ${currentFontSize}px):`, currentFontSize);
 
             if (newSize !== null) {
                 const parsedSize = parseInt(newSize, 10);
+                
                 if (parsedSize > 10 && !isNaN(parsedSize)) {
-                    // Update global state
+                    // 1. Update global state
                     currentFontSize = parsedSize;
                     
-                    // Apply new font size to the displayed content
+                    // 2. Apply new font size to the displayed content
+                    // The !important ensures this dynamic rule overrides the static CSS
                     document.styleSheets[0].insertRule(`#contentDisplay p { font-size: ${currentFontSize}px !important; }`, 0);
                     
-                    // Optional: Re-scroll to the current verse to confirm the change visually
-                    const currentReference = document.getElementById('contentHeader').textContent;
-                    const parts = currentReference.split(':');
-                    const chapter = parseInt(parts[0].trim().split('Chapter ')[1], 10);
-                    const verse = parseInt(parts[1].trim().split('Verse ')[0], 10);
-                    
-                    if (chapter && verse) {
-                         const targetElementId = `V${currentBookName}${chapter}:${verse}`;
+                    // 3. Re-scroll to the current verse using global state (currentVerseNumber)
+                    if (currentBookName && currentChapterNumber && currentVerseNumber) {
+                         const targetElementId = `V${currentBookName}${currentChapterNumber}:${currentVerseNumber}`;
                          const targetElement = document.getElementById(targetElementId);
+                         
                          if (targetElement) {
                             targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
                          }
                     }
-
                 } else if (!isNaN(parsedSize)) {
                     alert("Font size must be a number greater than 10.");
                 }
@@ -377,6 +378,8 @@
             document.getElementById('chaptersList').innerHTML = '';
             document.getElementById('versesList').innerHTML = '';
             currentBookName = bookName;
+            currentChapterNumber = null; // Reset chapter and verse
+            currentVerseNumber = null;
             
             bookContext.innerHTML = `<button id="navBookTop" class="context-nav-btn" onclick="showBooks()">${bookName}</button>`;
             
@@ -413,6 +416,7 @@
         function displayVerses(chapterNumber, verses) {
             document.getElementById('versesList').innerHTML = '';
             currentChapterNumber = chapterNumber;
+            currentVerseNumber = null; // Reset verse
 
             bookContextVerse.innerHTML = `<button id="navBookTop" class="context-nav-btn" onclick="showBooks()">${currentBookName}</button>`;
             chapterContextVerse.innerHTML = `<button id="navChapterTop" class="context-nav-btn" onclick="displayChapters('${currentBookName}')">Chapter ${chapterNumber}</button>`;
@@ -432,6 +436,9 @@
         function displayFullBook(bookName, chapterNumber, verseNumber) {
             
             showContent();
+            
+            // Update global state with the selected verse number
+            currentVerseNumber = verseNumber;
             
             const currentChapter = currentBookData.chapters.find(c => c.chapter === chapterNumber);
             
@@ -475,6 +482,7 @@
             const targetElement = document.getElementById(targetElementId);
             
             if (targetElement) {
+                // Scroll the highlighted element to the center of the screen
                 targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
             }
         }
