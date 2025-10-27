@@ -439,7 +439,7 @@
             });
         }
 
-        // --- 4. Display FULL Book Content and Scroll to Verse ---
+        // --- 4. Display FULL Book Content and Scroll to Verse (FIXED) ---
         function displayFullBook(bookName, chapterNumber, verseNumber) {
             
             showContent();
@@ -447,7 +447,24 @@
             // Update global state with the selected verse number
             currentVerseNumber = verseNumber;
             
+            // --- FIX START ---
+            if (!currentBookData || !currentBookData.chapters) {
+                console.error("Error: currentBookData or chapters array is missing.");
+                alert("Cannot display verse: Book data is missing. Please select the book again.");
+                showBooks();
+                return;
+            }
+
+            // Find the specific chapter object for the breadcrumb construction
             const currentChapter = currentBookData.chapters.find(c => c.chapter === chapterNumber);
+            
+            // CRITICAL FIX: Ensure the chapter is found before accessing its properties
+            if (!currentChapter) {
+                console.error(`Error: Chapter ${chapterNumber} not found in current book data.`);
+                alert(`Chapter ${chapterNumber} not found.`);
+                return;
+            }
+            // --- FIX END ---
             
             const versesJsonString = JSON.stringify(currentChapter.verses).replace(/"/g, '&quot;');
             
