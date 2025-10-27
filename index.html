@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KJV Bible Navigator 7</title>
+    <title>KJV Bible Navigator 8</title>
     <style>
         /* BASE STYLES */
         body {
@@ -35,7 +35,7 @@
         
         /* CONTEXTUAL NAVIGATION & SECTION HEADINGS */
         .section-title {
-            margin: 0; /* Remove default margin for fixed element */
+            margin: 0; 
             color: #333;
             border-bottom: 2px solid #ccc;
             padding-bottom: 5px;
@@ -48,7 +48,7 @@
             border: 1px solid #ccc;
             border-radius: 4px;
             cursor: pointer;
-            margin-right: 8px; /* Spacing between breadcrumbs */
+            margin-right: 8px; 
             font-size: 1em;
             display: inline-block;
             transition: background-color 0.1s;
@@ -176,8 +176,7 @@
         let currentBookData = null;
         let currentBookName = null;
         let currentChapterNumber = null;
-        let currentVerseNumber = null; // New state variable to track current verse
-        // GLOBAL: Default font size from CSS
+        let currentVerseNumber = null;
         let currentFontSize = 16; 
         
         // --- Element References ---
@@ -263,19 +262,17 @@
             }
         }
         
-        // --- FIX: Robust font size prompt using global state ---
         function showFontSizePrompt() {
             const newSize = prompt(`Enter new text size in pixels (current size: ${currentFontSize}px):`, currentFontSize);
 
             if (newSize !== null) {
                 const parsedSize = parseInt(newSize, 10);
                 
-                if (parsedSize > 4 && !isNaN(parsedSize)) {
+                if (parsedSize > 10 && !isNaN(parsedSize)) {
                     // 1. Update global state
                     currentFontSize = parsedSize;
                     
                     // 2. Apply new font size to the displayed content
-                    // The !important ensures this dynamic rule overrides the static CSS
                     document.styleSheets[0].insertRule(`#contentDisplay p { font-size: ${currentFontSize}px !important; }`, 0);
                     
                     // 3. Re-scroll to the current verse using global state (currentVerseNumber)
@@ -373,12 +370,12 @@
             }
         }
         
-        // --- 2. Display Chapters ---
+        // --- 2. Display Chapters (FIXED FOR SPACES IN FILENAME) ---
         async function displayChapters(bookName) {
             document.getElementById('chaptersList').innerHTML = '';
             document.getElementById('versesList').innerHTML = '';
             currentBookName = bookName;
-            currentChapterNumber = null; // Reset chapter and verse
+            currentChapterNumber = null;
             currentVerseNumber = null;
             
             bookContext.innerHTML = `<button id="navBookTop" class="context-nav-btn" onclick="showBooks()">${bookName}</button>`;
@@ -387,10 +384,14 @@
             
             if (!bookDataCache[bookName]) {
                 try {
-                    const fileName = `${bookName}.json`;
+                    // FIX: Remove all spaces from the bookName to generate the correct file name 
+                    // (e.g., "1 Samuel" becomes "1Samuel").
+                    const cleanBookName = bookName.replace(/\s/g, ''); 
+                    const fileName = `${cleanBookName}.json`; 
+                    
                     const response = await fetch(`${KJV_DIR}${fileName}`);
                     if (!response.ok) {
-                        document.getElementById('chaptersList').innerHTML = `<p style="color:red;">Error: Could not find **${fileName}** in the 'kjv' folder.</p>`;
+                        document.getElementById('chaptersList').innerHTML = `<p style="color:red;">Error: Could not find **${fileName}** in the 'kjv' folder. (Checked: ${bookName})</p>`;
                         return;
                     }
                     bookDataCache[bookName] = await response.json();
@@ -416,7 +417,7 @@
         function displayVerses(chapterNumber, verses) {
             document.getElementById('versesList').innerHTML = '';
             currentChapterNumber = chapterNumber;
-            currentVerseNumber = null; // Reset verse
+            currentVerseNumber = null; 
 
             bookContextVerse.innerHTML = `<button id="navBookTop" class="context-nav-btn" onclick="showBooks()">${currentBookName}</button>`;
             chapterContextVerse.innerHTML = `<button id="navChapterTop" class="context-nav-btn" onclick="displayChapters('${currentBookName}')">Chapter ${chapterNumber}</button>`;
