@@ -1,7 +1,7 @@
 {
   "name": "BIBLE",
   "short_name": "BIBLE",
-  "description": KJV BIBLE",
+  "description": "KJV BIBLE",
   "scope": "/bible/",
   "start_url": "/bible/",
   "background_color": "#ffffff",
