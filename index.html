@@ -178,6 +178,11 @@
     </div>
 
     <script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/bible/service-worker.js');
+}
+
+        
         // ASSUMPTION: The JSON files are in a directory named 'kjv'
         const KJV_DIR = './kjv/';
         
